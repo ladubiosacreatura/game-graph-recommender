@@ -71,3 +71,5 @@ npm install
 # Start the client (Running on http://localhost:5173)
 npm run dev
 ```
+
+The application should now be running at http://localhost:5173

@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  output = "./generated/client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Game {
+  id  Int @id @default(autoincrement())
+  title String
+  genre String // genre may be filled with many genres seperated by a comma for e.g. "Action, RPG, Rougelike"
+  developer String
+
+  outgoingEdges Edge[] @relation("SourceGame")
+  incomingEdges Edge[] @relation("TargetGame")
+}
+
+model Edge {
+  id Int @id @default(autoincrement())
+  sourceId Int
+  targetId Int
+  weight Float
+
+  sourceGame Game @relation("SourceGame", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetGame Game @relation("TargetGame", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique(name: "graphLink", fields: [sourceId,targetId])
+}
+

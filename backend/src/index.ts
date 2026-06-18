@@ -21,14 +21,25 @@ if (!dbUrl) {
 const adapter = new PrismaBetterSqlite3({ url: dbUrl });
 const prisma = new PrismaClient({ adapter });
 
-function calculateGenreSimilarity(genreA: string, genreB: string): number {
+function calculateGenreSimilarity(genreA: string, genreB: string, devA:string, devB: string): number {
     const tagsA = genreA.split(",").map(t => t.trim().toLowerCase());
     const tagsB = genreB.split(",").map(t => t.trim().toLowerCase());
-    
-    const intersection = tagsA.filter(t => tagsB.includes(t)).length;
-    if (intersection === 0) return 0.1; // baseline for different genred games
-    
-    return 0.5 + (intersection * 0.25); 
+    const genreIntersection = tagsA.filter(t => tagsB.includes(t)).length;
+
+    const sameDev = devA === devB;
+
+    let score = 0.0;
+    if (genreIntersection === 0){
+        score = 0.1;
+    } else {
+        score = 0.5 + (genreIntersection * 0.25)
+    }
+
+    if (sameDev){
+        score += 0.5;
+    }
+
+    return score;   
 }
 
 app.get("/api/graph", async (req, res) => {
@@ -69,7 +80,7 @@ app.post("/api/interact/", async (req, res) => {
         const updatedEdges = [];
 
         for (const edge of outgoingEdges){
-            const simmilarityFactor = calculateGenreSimilarity(sourceGame.genre, edge.targetGame.genre);
+            const simmilarityFactor = calculateGenreSimilarity(sourceGame.genre, edge.targetGame.genre, sourceGame.developer, edge.targetGame.developer);
             
             let newWeight = edge.weight;
 

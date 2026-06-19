@@ -78,19 +78,31 @@ app.post("/api/interact/", async (req, res) => {
         });
 
         const updatedEdges = [];
+        const simmilarityThreshold = 0.5; // At least same dev
 
         for (const edge of outgoingEdges){
             const simmilarityFactor = calculateGenreSimilarity(sourceGame.genre, edge.targetGame.genre, sourceGame.developer, edge.targetGame.developer);
+            const unsimmilarityFactor = 1.0 - simmilarityFactor;
             
             let newWeight = edge.weight;
 
             if (type === "LIKE"){
-                const buff = likeIncrement * simmilarityFactor;
-                newWeight = Math.min(3.0, Number((edge.weight + buff).toFixed(2)));
+                if (simmilarityFactor >= simmilarityThreshold){
+                    const buff = likeIncrement * simmilarityFactor;
+                    newWeight = Math.min(3.0, Number((edge.weight + buff).toFixed(2)));
+                } else {
+                    const debuff = dislikeDecrement * unsimmilarityFactor;
+                    newWeight = Math.max(0.0, Number((edge.weight - debuff).toFixed(2)));
+                }
             }
             else{
-                const debuff = dislikeDecrement * simmilarityFactor;
-                newWeight = Math.max(0.0, Number((edge.weight - debuff).toFixed(2)));
+                if (simmilarityFactor >= simmilarityThreshold){
+                    const debuff = dislikeDecrement * simmilarityFactor;
+                    newWeight = Math.max(0.0, Number((edge.weight - debuff).toFixed(2)));
+                } else {
+                    const buff = likeIncrement * unsimmilarityFactor;
+                    newWeight = Math.min(3.0, Number((edge.weight + buff).toFixed(2)));
+                }
             }
 
             const newEdge = await prisma.edge.update({
